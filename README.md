@@ -36,7 +36,7 @@ class TestController: TinySocket() {
     // Payload should implement Serializable
     @EventMapping("test")
     fun test(@Payload payload: Payload): String {
-        //return to controller on server side method @EventMapping("test") in @SocketController("test")
+        //return to the controller method annotationed by @EventMapping("test") of client side in @SocketController("test")
         return "something"
     }
 
