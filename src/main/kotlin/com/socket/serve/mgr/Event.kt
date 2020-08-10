@@ -1,6 +1,7 @@
 package com.socket.serve.mgr
 
 import com.socket.serve.annotations.Payload
+import com.socket.serve.file.TinyFile
 import com.socket.serve.model.MessageBody
 import com.socket.serve.model.Response
 import io.netty.channel.ChannelHandlerContext
@@ -20,7 +21,18 @@ class Event(val obj: Any, val method: Method) {
                 } else {
                     if (isPayloadMap) {
                         with(messageBody.payload as Map<*,*>) {
-                            val v = this[p.value.name]
+                            val parameterName = p.value.name
+                            val v = if (parameterName == "tinyFile") {
+                                val fid = this[parameterName] as Int
+                                val receiver = FileTransfer.find(fid)
+                                if (receiver != null) {
+                                    TinyFile(receiver)
+                                } else {
+                                    null
+                                }
+                            } else {
+                                this[parameterName]
+                            }
                             params[p.index] = v
                         }
                     }

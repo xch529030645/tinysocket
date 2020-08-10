@@ -1,6 +1,7 @@
 package com.socket.serve
 
 import com.socket.serve.mgr.Controllers
+import com.socket.serve.mgr.FileTransfer
 import com.socket.serve.mgr.Pools
 import com.socket.serve.model.MessageBody
 import io.netty.buffer.Unpooled
@@ -49,6 +50,12 @@ open class ClientHandler: SimpleChannelInboundHandler<Any>() {
                 val messageBody = MessageBody()
                 messageBody.read(text)
                 Controllers.dispatch(messageBody, ctx)
+            } else if (msg is BinaryWebSocketFrame) {
+                val buf = msg.content()
+                val msgType = buf.readInt()
+                if (msgType == 5) {
+                    FileTransfer.receive(buf)
+                }
             }
 
         }

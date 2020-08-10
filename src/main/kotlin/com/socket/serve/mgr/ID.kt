@@ -38,4 +38,10 @@ object ID {
             return -1
         }
     }
+
+    fun count(name: String): Int {
+        with(get()) {
+            return this[name]?.set?.size ?: 0
+        }
+    }
 }

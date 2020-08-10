@@ -1,10 +1,12 @@
 package com.socket.serve.mgr
 
 import com.socket.serve.model.MessageBody
+import io.netty.buffer.ByteBuf
 import io.netty.channel.Channel
 import io.netty.channel.group.ChannelGroup
 import io.netty.channel.group.ChannelMatcher
 import io.netty.channel.group.DefaultChannelGroup
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame
 import io.netty.util.AttributeKey
 import io.netty.util.concurrent.GlobalEventExecutor
 
@@ -80,8 +82,22 @@ object Pools {
         return null
     }
 
+    fun sendToId(id: Int, buf: ByteBuf) {
+        CHANNEL_GROUP.find {
+            it.attr(idAttr).get() == id
+        }?.let {
+            it.writeAndFlush(BinaryWebSocketFrame(buf))
+        }
+    }
+
     fun sendToGroup(group: Int, data: MessageBody) {
-        CHANNEL_GROUP.writeAndFlush(data, ChannelMatcher {
+        CHANNEL_GROUP.writeAndFlush(data.frame, ChannelMatcher {
+            it.attr(groupAttr).get() == group
+        })
+    }
+
+    fun sendToGroup(group: Int, buf: ByteBuf) {
+        CHANNEL_GROUP.writeAndFlush(BinaryWebSocketFrame(buf), ChannelMatcher {
             it.attr(groupAttr).get() == group
         })
     }

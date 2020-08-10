@@ -1,12 +1,11 @@
 package com.socket.serve.configuration
 
-import com.socket.serve.annotations.EventMapping
-import com.socket.serve.annotations.Payload
-import com.socket.serve.annotations.SendTo
-import com.socket.serve.annotations.Sync
+import com.socket.serve.annotations.*
+import com.socket.serve.mgr.FileTransfer
 import com.socket.serve.mgr.Pools
 import com.socket.serve.mgr.SentEvent
 import com.socket.serve.model.MessageBody
+import java.io.File
 import java.io.Serializable
 import java.lang.Exception
 import java.lang.reflect.InvocationHandler
@@ -51,6 +50,8 @@ class ProxySender(val ctrl: String): InvocationHandler {
                 var group = -1
                 var data: Any? = null
                 var params: HashMap<String, Any>? = null
+                var isTransferFile = false
+                var targetFile: File? = null
                 for (p in method.parameters.withIndex()) {
                     if (p.value.isAnnotationPresent(SendTo::class.java)) {
                         val anno = p.value.getAnnotation(SendTo::class.java)
@@ -69,6 +70,20 @@ class ProxySender(val ctrl: String): InvocationHandler {
                                 println("not serializable")
                             }
                         }
+                    } else if (p.value.isAnnotationPresent(SendFile::class.java)) {
+                        isTransferFile = true
+                        val v = args[p.index]
+                        targetFile = when (v) {
+                            is File -> {
+                                v
+                            }
+                            is String -> {
+                                File(v)
+                            }
+                            else -> {
+                                null
+                            }
+                        }
                     } else {
                         if (params == null) {
                             params = HashMap()
@@ -77,21 +92,39 @@ class ProxySender(val ctrl: String): InvocationHandler {
                     }
                 }
 
-                if (data == null) {
-                    data = params
-                }
+                if (isTransferFile) {
 
-                messageBody.payload = data
-                messageBody.isSync = it.isSync
-                if (id == -1 && group == -1) {
-                    id = 0
-                }
+                    targetFile?.let {
+                        messageBody.payload = targetFile
+                        return if (id != -1) {
+                            FileTransfer.send(id, 0, messageBody)
+                        } else if (group != -1) {
+                            FileTransfer.send(group, 1, messageBody)
+                        } else {
+                            0
+                        }
+                    }
 
-                if (id != -1) {
-                    return Pools.sendToId(id, messageBody)
+                    return 0
                 } else {
-                    Pools.sendToGroup(group, messageBody)
+                    if (data == null) {
+                        data = params
+                    }
+
+                    messageBody.payload = data
+                    messageBody.isSync = it.isSync
+                    if (id == -1 && group == -1) {
+                        id = 0
+                    }
+
+                    if (id != -1) {
+                        return Pools.sendToId(id, messageBody)
+                    } else {
+                        Pools.sendToGroup(group, messageBody)
+                    }
                 }
+
+
             } else {
                 messageBody.isSync = it.isSync
                 return Pools.sendToId(0, messageBody)
