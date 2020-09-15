@@ -9,9 +9,9 @@ object Socket {
         }
     }
 
-    fun client(ip: String, path: String, id: Int, group: Int, name: String) {
+    fun client(ip: String, path: String, id: Int, group: Int, name: String, domain: String) {
         thread {
-            Client(ip, path, id, group, name).start()
+            Client(ip, path, id, group, name, domain).start()
         }
     }
 }

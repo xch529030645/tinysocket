@@ -2,6 +2,7 @@ package com.socket.serve
 
 import com.socket.serve.mgr.Controllers
 import com.socket.serve.mgr.Pools
+import com.socket.serve.model.Machine
 import com.socket.serve.model.MessageBody
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
@@ -33,6 +34,7 @@ class ServerSocketHandler(val server: CoreServer): SimpleChannelInboundHandler<A
 				idleTimes++
 				println("已等待5秒还没收到客户端发来的消息")
 				if (idleTimes >= 3) {
+					idleTimes = 0
 					println("连续3次没有收到消息，关闭")
 					Pools.remove(ctx.channel())
 					ctx.close()
@@ -63,13 +65,35 @@ class ServerSocketHandler(val server: CoreServer): SimpleChannelInboundHandler<A
 					if (p0 == 987123 && p1 == 57132362) {
 						val id = buf.readInt()
 						val group = buf.readInt()
-						val len = buf.readShort().toInt()
+						var len = buf.readShort().toInt()
 						val bytes = ByteArray(len)
 						buf.readBytes(bytes)
 						val name = String(bytes)
-						Pools.add(id, group, name, ctx.channel())
+						val volume_total = buf.readInt()
+						val volume_used = buf.readInt()
+						len = buf.readShort().toInt()
+						val domainBytes = ByteArray(len)
+						buf.readBytes(domainBytes)
+						val domain = String(domainBytes)
+
+						var ip = ctx.channel().remoteAddress().toString()
+						ip = ip.substring(1, ip.lastIndexOf(":"))
+						val machine = Machine()
+						machine.machine_id = id
+						machine.machine_group = group
+						machine.machine_name = name
+						machine.ip = ip
+						machine.volume_total = volume_total
+						machine.volume_free = volume_used
+						machine.domain = domain
+						machine.isOnline = true
+
+						Pools.add(machine, ctx.channel())
 					}
 				}
+			} else if (msg is FullHttpRequest) {
+				ctx.close()
+				return
 			}
 		}
 
@@ -83,6 +107,11 @@ class ServerSocketHandler(val server: CoreServer): SimpleChannelInboundHandler<A
 //		val messageBody = MessageBody()
 //		messageBody.read(text)
 //		Controllers.dispatch(messageBody, ctx)
+	}
+
+	override fun exceptionCaught(ctx: ChannelHandlerContext?, cause: Throwable?) {
+		super.exceptionCaught(ctx, cause)
+		cause?.printStackTrace()
 	}
 
 }

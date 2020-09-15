@@ -27,7 +27,9 @@ class FileTransferReceiver(val fid: Int) {
         fos = FileOutputStream(file)
     }
     fun receive(buf: ByteBuf): FileTransferReceiver {
-        val left = buf.readableBytes() - buf.readerIndex()
+        val t = buf.writerIndex()
+        val c = buf.readerIndex()
+        val left = t - c
         if (left > 0) {
             val bytes = ByteArray(left)
             buf.readBytes(bytes)
@@ -92,6 +94,7 @@ object FileTransfer {
         val transFlag = buf.readByte().toInt()
         synchronized(lock) {
             if (createFlag == 0) { //创建文件
+                println("receive file $fid")
                 receivers.remove(fid)?.remove()
                 receivers[fid] = FileTransferReceiver(fid).receive(buf)
             } else {

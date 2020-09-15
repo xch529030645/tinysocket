@@ -24,6 +24,8 @@ object Controllers {
         }
         controllers[messageBody.ctrl]?.let {
             it.fireEvent(messageBody, ctx)
+            return
         }
+        println("no mapped ctrl: ${messageBody.ctrl}, probably not extends TinySocket")
     }
 }

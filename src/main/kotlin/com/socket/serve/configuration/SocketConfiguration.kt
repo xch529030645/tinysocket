@@ -1,11 +1,9 @@
 package com.socket.serve.configuration
 
 import com.socket.serve.Socket
-import com.socket.serve.annotations.EnableTinyClient
-import com.socket.serve.annotations.EnableTinyServer
-import com.socket.serve.annotations.SocketController
-import com.socket.serve.annotations.SocketSender
+import com.socket.serve.annotations.*
 import com.socket.serve.mgr.Controllers
+import com.socket.serve.mgr.ID
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.beans.factory.support.*
 import org.springframework.context.ApplicationContext
@@ -13,7 +11,6 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.core.io.support.ResourcePatternResolver
-import java.io.File
 import kotlin.concurrent.thread
 
 
@@ -22,6 +19,7 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
     lateinit var beanFactory: DefaultListableBeanFactory
     lateinit var beanDefinitionRegistry: BeanDefinitionRegistry
     lateinit var context: ApplicationContext
+
 
     override fun setApplicationContext(context: ApplicationContext) {
         this.context = context
@@ -41,8 +39,10 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
         val searchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + backPackage.replace(".", "/") + "/**/*.class"
         val resources = resolver.getResources(searchPath)
         for (resource in resources) {
-            val path = resource.file.absolutePath.replace(File.separator, ".").replace(".class", "")
-            val clzName = path.substring(path.indexOf(backPackage))
+//            val path = resource.file.absolutePath.replace(File.separator, ".").replace(".class", "")
+//            val clzName = path.substring(path.indexOf(backPackage))
+            val url = resource.url.toString().replace("/", ".")
+            val clzName = url.substring(url.indexOf(backPackage), url.lastIndexOf(".class"))
             val clz = Thread.currentThread().contextClassLoader.loadClass(clzName) ?: continue
             process(beanDefinitionRegistry, clz)
         }
@@ -61,18 +61,6 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
             definition.setBeanClass(ProxyFactory::class.java)
             definition.autowireMode = GenericBeanDefinition.AUTOWIRE_BY_TYPE
             registry.registerBeanDefinition(clzName, definition)
-        } else if (clz.isAnnotationPresent(SocketController::class.java)) {
-//            val tinyAnno = clz.getAnnotation(SocketController::class.java)
-//            val clzName = clz.simpleName
-//            val name = tinyAnno.name
-//
-//            val builder: BeanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(clz)
-//            val definition = builder.rawBeanDefinition as GenericBeanDefinition
-//            definition.propertyValues.add("interfaceClass", definition.beanClassName)
-//            definition.propertyValues.add("name", name)
-//            definition.setBeanClass(SocketFactory::class.java)
-//            definition.autowireMode = GenericBeanDefinition.AUTOWIRE_BY_TYPE
-//            registry.registerBeanDefinition(clzName, definition)
         }
     }
 
@@ -80,6 +68,7 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
         val clz = ctrl::class.java
         val annotation = clz.getAnnotation(SocketController::class.java)
         Controllers.add(annotation.name, clz, ctrl)
+
     }
 
 
@@ -124,9 +113,11 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
                 val id = getProperty("tiny.client.id")?.toInt() ?: return
                 val group = getProperty("tiny.client.group")?.toInt() ?: return
                 val name = getProperty("tiny.client.name") ?: ""
+                val domain = getProperty("tiny.client.domain") ?: ""
+                ID.myId = id
 
                 thread {
-                    Socket.client("$url:$port", path, id, group, name)
+                    Socket.client("$url:$port", path, id, group, name, domain)
                 }
             }
         }

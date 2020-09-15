@@ -4,6 +4,8 @@ object ID {
 
     lateinit var get: () -> Map<String, IDS>
 
+    var myId = 0
+
     fun single(name: String): Int {
         with(get()) {
             this[name]?.let {

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 
-open class Client(val ip: String, var path: String, val id: Int, val group: Int, val name: String) {
+open class Client(val ip: String, var path: String, val id: Int, val group: Int, val name: String, val domain: String) {
     var clientHandler: ClientHandler = ClientHandler()
 
     init {
