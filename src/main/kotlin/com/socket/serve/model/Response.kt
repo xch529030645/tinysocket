@@ -8,6 +8,6 @@ class Response(private val messageBody: MessageBody, private val ctx: ChannelHan
 
     fun write(obj: Any) {
         messageBody.payload = obj
-        ctx.writeAndFlush(messageBody.frame)
+        ctx.writeAndFlush(messageBody.frame())
     }
 }

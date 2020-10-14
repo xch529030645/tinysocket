@@ -1,5 +1,8 @@
 package com.socket.serve.model
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.socket.serve.Json
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -34,9 +37,12 @@ class MessageBody {
         }
     }
 
-    val frame: TextWebSocketFrame
-        get() {
-            seq++
+    fun frame(): TextWebSocketFrame {
+        seq++
+
+//        val data = Json.writeValueAsString(this)
+//        return TextWebSocketFrame(data)
+
             val json = JSONObject()
             json.put("ctrl", ctrl)
             json.put("event", event)
@@ -50,7 +56,6 @@ class MessageBody {
                 val data = Base64.getEncoder().encodeToString(bos.toByteArray())
                 json.put("payload", data)
             }
-
             return TextWebSocketFrame(json.toString())
         }
 }

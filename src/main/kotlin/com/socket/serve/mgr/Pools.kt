@@ -11,6 +11,7 @@ import io.netty.channel.group.DefaultChannelGroup
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame
 import io.netty.util.concurrent.GlobalEventExecutor
 import java.lang.Exception
+import kotlin.concurrent.thread
 
 class IDS(val group: Int) {
     val set = HashSet<Int>()
@@ -30,7 +31,9 @@ object Pools {
             delegates.add(delegate)
             if (onlineMachines.isNotEmpty()) {
                 onlineMachines.forEach {
-                    delegate.onMachineEnter(it)
+                    thread {
+                        delegate.onMachineEnter(it)
+                    }
                 }
             }
         }
@@ -57,6 +60,7 @@ object Pools {
 
         println("client enter id: ${machine.machine_id}, group: ${machine.machine_group}")
 
+        CHANNEL_GROUP.add(channel)
         synchronized(nameLock) {
             if (!nameMaps.containsKey(machine.machine_name)) {
                 nameMaps[machine.machine_name] = IDS(machine.machine_group)
@@ -66,12 +70,13 @@ object Pools {
 
             if (delegates.isNotEmpty()) {
                 delegates.forEach {
-                    it.onMachineEnter(machine)
+                    thread {
+                        it.onMachineEnter(machine)
+                    }
                 }
             }
         }
 
-        CHANNEL_GROUP.add(channel)
     }
 
     fun remove(channel: Channel) {
@@ -99,7 +104,7 @@ object Pools {
         CHANNEL_GROUP.find {
             it.attr(ChannelAttr.idAttr).get() == id
         }?.let {
-            it.writeAndFlush(data.frame)
+            it.writeAndFlush(data.frame())
             if (data.isSync) {
                 val task = Futures.future(data.ctrl, data.event)
                 val syncList = it.attr(ChannelAttr.syncAttr)
@@ -125,7 +130,7 @@ object Pools {
 
     fun sendToGroup(group: Int, data: MessageBody) {
         try {
-            CHANNEL_GROUP.writeAndFlush(data.frame, ChannelMatcher {
+            CHANNEL_GROUP.writeAndFlush(data.frame(), ChannelMatcher {
                 it.attr(ChannelAttr.groupAttr).get() == group
             })
         } catch (e: Exception) {

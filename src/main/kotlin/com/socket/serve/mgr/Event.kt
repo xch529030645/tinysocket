@@ -43,7 +43,7 @@ class Event(val obj: Any, val method: Method) {
             method.invoke(obj)
         }?.let {
             messageBody.payload = it
-            ctx.writeAndFlush(messageBody.frame)
+            ctx.writeAndFlush(messageBody.frame())
         }
     }
 }

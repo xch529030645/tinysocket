@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.core.io.support.ResourcePatternResolver
+import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 
 
@@ -20,15 +21,9 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
     lateinit var beanDefinitionRegistry: BeanDefinitionRegistry
     lateinit var context: ApplicationContext
 
-
     override fun setApplicationContext(context: ApplicationContext) {
         this.context = context
         beanFactory = context.autowireCapableBeanFactory as DefaultListableBeanFactory
-//        val ctrls = beanFactory.getBeansWithAnnotation(SocketController::class.java)
-//        for ((k,v) in ctrls) {
-//            addCtrl(v)
-//        }
-        runService()
     }
 
     override fun postProcessBeanDefinitionRegistry(p0: BeanDefinitionRegistry) {
@@ -77,6 +72,8 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
 //        for ((k,v) in ctrls) {
 //            addCtrl(v)
 //        }
+        runService()
+
     }
 
 
@@ -85,8 +82,8 @@ class SocketConfiguration: ApplicationContextAware, BeanDefinitionRegistryPostPr
         for (stackTraceElement in stackTrace) {
             if ("main" == stackTraceElement.methodName) {
                 var name = stackTraceElement.className
-                val clz = Thread.currentThread().contextClassLoader.loadClass(name)
-                clz.isAnnotationPresent(EnableTinyServer::class.java)
+//                val clz = Thread.currentThread().contextClassLoader.loadClass(name)
+//                clz.isAnnotationPresent(EnableTinyServer::class.java)
                 name = name.substring(0, name.lastIndexOf("."))
                 return name
             }
